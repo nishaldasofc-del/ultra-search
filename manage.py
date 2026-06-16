@@ -292,50 +292,6 @@ def build_parser():
 # Entry point
 # ═════════════════════════════════════════════════════════════════════════════
 
-DISPATCH = {
-    "db":            cmd_db,
-    "server":        cmd_server,
-    "worker":        cmd_worker,
-    "beat":          cmd_beat,
-    "worker-health": cmd_worker_health,
-    "crawl":         cmd_crawl,
-    "search":        cmd_search,
-    "factcheck":     cmd_factcheck,
-    "shell":         cmd_shell,
-    "index":         cmd_index,
-    "seeds":         cmd_seeds,
-    "index-stats":   cmd_index_stats,
-}
-
-
-def main():
-    parser = build_parser()
-    args = parser.parse_args()
-
-    if not args.command:
-        parser.print_help()
-        sys.exit(0)
-
-    handler = DISPATCH.get(args.command)
-    if handler is None:
-        print(f"Unknown command: {args.command}")
-        parser.print_help()
-        sys.exit(1)
-
-    try:
-        handler(args)
-    except KeyboardInterrupt:
-        print("\nInterrupted.")
-        sys.exit(0)
-    except Exception as e:
-        print(f"\n✗ Error: {e}", file=sys.stderr)
-        sys.exit(1)
-
-
-if __name__ == "__main__":
-    main()
-
-
 # ═════════════════════════════════════════════════════════════════════════════
 # Index / Seed commands (added for zero-dependency search)
 # ═════════════════════════════════════════════════════════════════════════════
@@ -386,11 +342,10 @@ def cmd_seeds(args):
 
 
 def cmd_index_stats(_args):
-    """Print index stats: pages in PG, vectors in Qdrant."""
+    """Print index stats: pages in PostgreSQL."""
     import asyncio
     from database.models import SessionLocal
     from sqlalchemy import text
-    from vector.store import VectorStore
 
     async def _run():
         async with SessionLocal() as session:
@@ -398,14 +353,52 @@ def cmd_index_stats(_args):
                 text("SELECT COUNT(*) as n, MAX(crawled_at) as last FROM pages")
             )
             row = r.fetchone()
-        vs    = VectorStore()
-        vcount = vs.count()
         print(f"\nIndex Stats")
         print(f"  Pages in PostgreSQL : {row.n:,}")
         print(f"  Last crawled        : {str(row.last)[:16] if row.last else 'never'}")
-        print(f"  Vectors in Qdrant   : {vcount:,}")
-        chunks_per_page = round(vcount / row.n, 1) if row.n else 0
-        print(f"  Avg chunks/page     : {chunks_per_page}")
 
     asyncio.run(_run())
 
+
+DISPATCH = {
+    "db":            cmd_db,
+    "server":        cmd_server,
+    "worker":        cmd_worker,
+    "beat":          cmd_beat,
+    "worker-health": cmd_worker_health,
+    "crawl":         cmd_crawl,
+    "search":        cmd_search,
+    "factcheck":     cmd_factcheck,
+    "shell":         cmd_shell,
+    "index":         cmd_index,
+    "seeds":         cmd_seeds,
+    "index-stats":   cmd_index_stats,
+}
+
+
+def main():
+    parser = build_parser()
+    args = parser.parse_args()
+
+    if not args.command:
+        parser.print_help()
+        sys.exit(0)
+
+    handler = DISPATCH.get(args.command)
+    if handler is None:
+        print(f"Unknown command: {args.command}")
+        parser.print_help()
+        sys.exit(1)
+
+    try:
+        handler(args)
+    except KeyboardInterrupt:
+        print("\nInterrupted.")
+        sys.exit(0)
+    except Exception as e:
+        print(f"\n✗ Error: {e}", file=sys.stderr)
+        sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()
