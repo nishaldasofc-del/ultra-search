@@ -1,50 +1,14 @@
-databases:
-  - name: ultrasearch-db
-    databaseName: ultrasearch
-    # Removed "user: postgres" so Render auto-generates a valid, secure username
-    plan: free 
-
 services:
-  # --- Fixed Redis by adding the IP Allow List ---
-  - type: redis
-    name: ultrasearch-redis
-    plan: free
-    ipAllowList: [] # This keeps it secure: only internal Render apps can connect
-
-  # 1. The Main API Server
   - type: web
     name: ultrasearch-api
     env: python
     buildCommand: "pip install -r requirements.txt"
-    startCommand: "uvicorn app:app --host 0.0.0.0 --port $PORT"
+    startCommand: "bash start.sh"
     envVars:
+      # We set sync: false so Render asks you to paste these securely in the dashboard
       - key: POSTGRES_URL
-        fromDatabase:
-          name: ultrasearch-db
-          property: connectionString
+        sync: false
       - key: REDIS_URL
-        fromService:
-          type: redis
-          name: ultrasearch-redis
-          property: connectionString
-      - key: OPENROUTER_API_KEY
-        sync: false # You will paste this in the Render dashboard
-
-  # 2. The Background Worker (Crawler & Indexer)
-  - type: worker
-    name: ultrasearch-worker
-    env: python
-    buildCommand: "pip install -r requirements.txt"
-    startCommand: "celery -A workers.tasks worker --beat --loglevel=info -c 2"
-    envVars:
-      - key: POSTGRES_URL
-        fromDatabase:
-          name: ultrasearch-db
-          property: connectionString
-      - key: REDIS_URL
-        fromService:
-          type: redis
-          name: ultrasearch-redis
-          property: connectionString
+        sync: false
       - key: OPENROUTER_API_KEY
         sync: false
