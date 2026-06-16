@@ -16,7 +16,6 @@ from api.search        import router as search_router
 from api.research      import router as research_router
 from api.crawl         import router as crawl_router
 from api.factcheck     import router as factcheck_router
-from api.vector_search import router as vector_search_router
 from api.memory        import router as memory_router
 
 # ── middleware ────────────────────────────────────────────────────────────────
@@ -69,7 +68,6 @@ app.include_router(search_router,        prefix="/search",        tags=["Search"
 app.include_router(research_router,      prefix="/research",      tags=["Research"])
 app.include_router(crawl_router,         prefix="/crawl",         tags=["Crawl"])
 app.include_router(factcheck_router,     prefix="/fact-check",    tags=["Fact Check"])
-app.include_router(vector_search_router, prefix="/vector-search", tags=["Vector Search"])
 app.include_router(memory_router,        prefix="/memory",        tags=["Memory"])
 
 
