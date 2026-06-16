@@ -47,7 +47,12 @@ def clean_postgres_url(url: str) -> str:
 # Apply the normalizer
 _db_url = clean_postgres_url(settings.postgres_url)
 
-engine       = create_async_engine(_db_url, echo=False, pool_pre_ping=True)
+engine       = create_async_engine(
+    _db_url,
+    echo=False,
+    pool_pre_ping=True,
+    connect_args={"ssl": True}
+)
 SessionLocal = async_sessionmaker(engine, expire_on_commit=False, class_=AsyncSession)
 
 
