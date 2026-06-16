@@ -29,7 +29,12 @@ if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
 # Override DB URL from settings so we never hard-code creds in alembic.ini
-_url = settings.postgres_url.replace("postgresql://", "postgresql+asyncpg://")
+db_url = settings.postgres_url
+if db_url.startswith("postgres://"):
+    db_url = db_url.replace("postgres://", "postgresql+asyncpg://", 1)
+elif db_url.startswith("postgresql://"):
+    db_url = db_url.replace("postgresql://", "postgresql+asyncpg://", 1)
+_url = db_url
 config.set_main_option("sqlalchemy.url", _url)
 
 # Autogenerate support: point at our models' metadata
