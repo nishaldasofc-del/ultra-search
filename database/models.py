@@ -21,6 +21,8 @@ def clean_postgres_url(url: str) -> str:
     #    empty .query, which means parameter surgery below is silently skipped.)
     if url.startswith("postgres://"):
         url = url.replace("postgres://", "postgresql://", 1)
+    # Strip +asyncpg if already present so urlparse can read query params
+    url = url.replace("postgresql+asyncpg://", "postgresql://", 1)
 
     # 2. Parse query parameters while the scheme is still standard.
     parsed = urlparse(url)
