@@ -12,15 +12,36 @@ from sqlalchemy.dialects.postgresql import TSVECTOR
 from datetime import datetime
 from config import settings
 
-db_url = settings.postgres_url
-if db_url.startswith("postgres://"):
-    db_url = db_url.replace("postgres://", "postgresql+asyncpg://", 1)
-elif db_url.startswith("postgresql://"):
-    db_url = db_url.replace("postgresql://", "postgresql+asyncpg://", 1)
+from urllib.parse import urlparse, urlunparse, parse_qsl, urlencode
 
-# Convert sslmode to ssl for asyncpg compatibility
-db_url = db_url.replace("sslmode=require", "ssl=true")
-_db_url = db_url
+def clean_postgres_url(url: str) -> str:
+    # 1. Normalize the schema for asyncpg
+    if url.startswith("postgres://"):
+        url = url.replace("postgres://", "postgresql+asyncpg://", 1)
+    elif url.startswith("postgresql://"):
+        url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
+
+    # 2. Parse query parameters
+    parsed = urlparse(url)
+    query_params = dict(parse_qsl(parsed.query))
+
+    # 3. Convert sslmode to ssl
+    if "sslmode" in query_params:
+        val = query_params.pop("sslmode")
+        if val in ("require", "prefer", "allow"):
+            query_params["ssl"] = "true"
+
+    # 4. Strip completely unsupported asyncpg parameters
+    unsupported = ["channel_binding", "sslrootcert", "sslcert", "sslkey", "sslcrl"]
+    for param in unsupported:
+        query_params.pop(param, None)
+
+    # 5. Reconstruct the clean URL
+    new_query = urlencode(query_params)
+    return urlunparse(parsed._replace(query=new_query))
+
+# Apply the normalizer
+_db_url = clean_postgres_url(settings.postgres_url)
 
 engine       = create_async_engine(_db_url, echo=False, pool_pre_ping=True)
 SessionLocal = async_sessionmaker(engine, expire_on_commit=False, class_=AsyncSession)
