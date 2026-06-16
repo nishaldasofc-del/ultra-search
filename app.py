@@ -73,5 +73,6 @@ app.include_router(memory_router,        prefix="/memory",        tags=["Memory"
 
 # ── health ────────────────────────────────────────────────────────────────────
 @app.get("/health", tags=["System"])
+@app.head("/health", tags=["System"])
 async def health():
     return {"status": "ok", "version": "1.0.0"}
