@@ -15,30 +15,32 @@ from config import settings
 from urllib.parse import urlparse, urlunparse, parse_qsl, urlencode
 
 def clean_postgres_url(url: str) -> str:
-    # 1. Normalize the schema for asyncpg
+    # 1. Normalise to a plain postgresql:// scheme FIRST so that urlparse
+    #    recognises it and correctly splits out the query string.
+    #    (urlparse does not understand postgresql+asyncpg:// and returns an
+    #    empty .query, which means parameter surgery below is silently skipped.)
     if url.startswith("postgres://"):
-        url = url.replace("postgres://", "postgresql+asyncpg://", 1)
-    elif url.startswith("postgresql://"):
-        url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
+        url = url.replace("postgres://", "postgresql://", 1)
 
-    # 2. Parse query parameters
+    # 2. Parse query parameters while the scheme is still standard.
     parsed = urlparse(url)
     query_params = dict(parse_qsl(parsed.query))
 
-    # 3. Convert sslmode to ssl
+    # 3. Convert sslmode to ssl (asyncpg uses ssl=true, not sslmode=require).
     if "sslmode" in query_params:
         val = query_params.pop("sslmode")
         if val in ("require", "prefer", "allow"):
             query_params["ssl"] = "true"
 
-    # 4. Strip completely unsupported asyncpg parameters
+    # 4. Strip parameters asyncpg does not accept at all.
     unsupported = ["channel_binding", "sslrootcert", "sslcert", "sslkey", "sslcrl"]
     for param in unsupported:
         query_params.pop(param, None)
 
-    # 5. Reconstruct the clean URL
+    # 5. Reconstruct with clean query string, then swap to asyncpg scheme.
     new_query = urlencode(query_params)
-    return urlunparse(parsed._replace(query=new_query))
+    clean = urlunparse(parsed._replace(query=new_query))
+    return clean.replace("postgresql://", "postgresql+asyncpg://", 1)
 
 # Apply the normalizer
 _db_url = clean_postgres_url(settings.postgres_url)
