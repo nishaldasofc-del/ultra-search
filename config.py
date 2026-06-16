@@ -5,6 +5,7 @@ All search API keys removed. Zero external search dependency.
 
 from pydantic_settings import BaseSettings
 from pydantic import Field
+from pydantic.aliases import AliasChoices
 from typing import Optional
 
 
@@ -18,11 +19,11 @@ class Settings(BaseSettings):
     deep_model: str = "deepseek/deepseek-chat:free"
 
     # Databases
-    # Accepts DATABASE_URL (Render/Heroku/Neon convention) OR postgres_url.
-    # DATABASE_URL is checked first; postgres_url is the fallback field name.
+    # Accepts POSTGRES_URL (our convention, set in Render env vars and .env)
+    # or DATABASE_URL (Neon/Heroku convention) — whichever is present.
     postgres_url: str = Field(
         default="postgresql://postgres:postgres@localhost:5432/ultrasearch",
-        validation_alias="DATABASE_URL",
+        validation_alias=AliasChoices("POSTGRES_URL", "DATABASE_URL", "postgres_url"),
     )
     redis_url: str = "redis://localhost:6379"
 
@@ -34,13 +35,13 @@ class Settings(BaseSettings):
     crawler_max_pages_per_job: int = 500
 
     # Indexer
-    indexer_chunk_size: int = 400        # words per chunk
-    indexer_chunk_overlap: int = 50      # word overlap between chunks
-    indexer_batch_size: int = 32         # embed N chunks per API call
+    indexer_chunk_size: int = 400
+    indexer_chunk_overlap: int = 50
+    indexer_batch_size: int = 32
 
     # Search
-    search_bm25_top_k: int = 50          # over-fetch from PG FTS
-    search_final_top_k: int = 20         # results after BM25
+    search_bm25_top_k: int = 50
+    search_final_top_k: int = 20
     search_min_score: float = 0.0
 
     # Research
@@ -50,7 +51,6 @@ class Settings(BaseSettings):
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"
-        # Allow both DATABASE_URL and postgres_url to populate the field
         populate_by_name = True
 
 
