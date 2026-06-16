@@ -25,7 +25,10 @@ class Settings(BaseSettings):
         default="postgresql://postgres:postgres@localhost:5432/ultrasearch",
         validation_alias=AliasChoices("POSTGRES_URL", "DATABASE_URL", "postgres_url"),
     )
-    redis_url: str = "redis://localhost:6379"
+    redis_url: str = Field(
+        default="redis://localhost:6379",
+        validation_alias=AliasChoices("REDIS_URL", "redis_url"),
+    )
 
     # Crawler settings
     crawler_concurrency: int = 8
