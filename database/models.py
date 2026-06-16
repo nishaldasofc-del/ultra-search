@@ -12,7 +12,12 @@ from sqlalchemy.dialects.postgresql import TSVECTOR
 from datetime import datetime
 from config import settings
 
-_db_url = settings.postgres_url.replace("postgresql://", "postgresql+asyncpg://")
+db_url = settings.postgres_url
+if db_url.startswith("postgres://"):
+    db_url = db_url.replace("postgres://", "postgresql+asyncpg://", 1)
+elif db_url.startswith("postgresql://"):
+    db_url = db_url.replace("postgresql://", "postgresql+asyncpg://", 1)
+_db_url = db_url
 
 engine       = create_async_engine(_db_url, echo=False, pool_pre_ping=True)
 SessionLocal = async_sessionmaker(engine, expire_on_commit=False, class_=AsyncSession)
