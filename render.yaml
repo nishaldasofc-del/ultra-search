@@ -4,11 +4,12 @@ databases:
     user: postgres
     plan: free # Change to starter ($7/mo) for production
 
-  - name: ultrasearch-redis
-    type: redis
+services:
+  # --- We moved Redis here! ---
+  - type: redis
+    name: ultrasearch-redis
     plan: free
 
-services:
   # 1. The Main API Server
   - type: web
     name: ultrasearch-api
@@ -21,7 +22,8 @@ services:
           name: ultrasearch-db
           property: connectionString
       - key: REDIS_URL
-        fromDatabase:
+        fromService:
+          type: redis
           name: ultrasearch-redis
           property: connectionString
       - key: OPENROUTER_API_KEY
@@ -32,7 +34,6 @@ services:
     name: ultrasearch-worker
     env: python
     buildCommand: "pip install -r requirements.txt"
-    # Notice we combined the worker and beat (scheduler) into one command to save you money!
     startCommand: "celery -A workers.tasks worker --beat --loglevel=info -c 2"
     envVars:
       - key: POSTGRES_URL
@@ -40,7 +41,8 @@ services:
           name: ultrasearch-db
           property: connectionString
       - key: REDIS_URL
-        fromDatabase:
+        fromService:
+          type: redis
           name: ultrasearch-redis
           property: connectionString
       - key: OPENROUTER_API_KEY
