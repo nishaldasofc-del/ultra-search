@@ -1,0 +1,47 @@
+databases:
+  - name: ultrasearch-db
+    databaseName: ultrasearch
+    user: postgres
+    plan: free # Change to starter ($7/mo) for production
+
+  - name: ultrasearch-redis
+    type: redis
+    plan: free
+
+services:
+  # 1. The Main API Server
+  - type: web
+    name: ultrasearch-api
+    env: python
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "uvicorn app:app --host 0.0.0.0 --port $PORT"
+    envVars:
+      - key: POSTGRES_URL
+        fromDatabase:
+          name: ultrasearch-db
+          property: connectionString
+      - key: REDIS_URL
+        fromDatabase:
+          name: ultrasearch-redis
+          property: connectionString
+      - key: OPENROUTER_API_KEY
+        sync: false # You will paste this in the Render dashboard
+
+  # 2. The Background Worker (Crawler & Indexer)
+  - type: worker
+    name: ultrasearch-worker
+    env: python
+    buildCommand: "pip install -r requirements.txt"
+    # Notice we combined the worker and beat (scheduler) into one command to save you money!
+    startCommand: "celery -A workers.tasks worker --beat --loglevel=info -c 2"
+    envVars:
+      - key: POSTGRES_URL
+        fromDatabase:
+          name: ultrasearch-db
+          property: connectionString
+      - key: REDIS_URL
+        fromDatabase:
+          name: ultrasearch-redis
+          property: connectionString
+      - key: OPENROUTER_API_KEY
+        sync: false
