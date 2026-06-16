@@ -38,8 +38,9 @@ def upgrade() -> None:
             RETURN NEW;
         END;
         $$ LANGUAGE plpgsql;
-
-        DROP TRIGGER IF EXISTS tsvector_update ON pages;
+    """)
+    op.execute("DROP TRIGGER IF EXISTS tsvector_update ON pages;")
+    op.execute("""
         CREATE TRIGGER tsvector_update
             BEFORE INSERT OR UPDATE OF title, content
             ON pages
